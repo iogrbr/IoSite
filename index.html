@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IoGrabber</title>
+<link id="dynamic-favicon" rel="icon" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;700;900&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
@@ -460,7 +461,6 @@
   </footer>
 
 </div>
-
 <script>
 (function () {
 
@@ -688,7 +688,21 @@
     return 'autumn';                                  
   }
 
-  function setSeason(s, isManual = false) {
+  const favicons = {
+    winter: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path fill='none' stroke='%234db8e8' stroke-width='8' stroke-linecap='round' d='M50 10 v80 M10 50 h80 M22 22 l56 56 M78 22 l-56 56'/><circle cx='50' cy='50' r='6' fill='%234db8e8'/></svg>`,
+    spring: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path fill='%234caf6e' d='M50 20 Q65 40 50 80 Q35 40 50 20 Z'/><path fill='%234caf6e' d='M50 50 Q80 40 80 60 Q80 80 50 65 Z'/><path fill='%234caf6e' d='M50 50 Q20 40 20 60 Q20 80 50 65 Z'/></svg>`,
+    summer: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='20' fill='%23f5c842'/><path fill='none' stroke='%23f5c842' stroke-width='6' stroke-linecap='round' d='M50 10 v15 M50 75 v15 M10 50 h15 M75 50 h15 M22 22 l10 10 M68 68 l10 10 M78 22 l-10 10 M32 68 l-10 10'/></svg>`,
+    autumn: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path fill='%23e06428' d='M50 10 C60 30 90 40 70 60 C85 75 60 90 50 75 C40 90 15 75 30 60 C10 40 40 30 50 10 Z'/><rect x='48' y='75' width='4' height='15' fill='%23e06428'/></svg>`
+  };
+
+  function updateFavicon(s) {
+    const link = document.getElementById('dynamic-favicon');
+    if (link) {
+      link.href = "data:image/svg+xml," + favicons[s];
+    }
+  }
+
+function setSeason(s, isManual = false) {
     mode = s;
   
     if (isManual) localStorage.setItem('user-season', s);
@@ -703,8 +717,10 @@
     document.querySelectorAll('.ssb').forEach(function (b) {
       b.classList.toggle('on', b.dataset.s === s);
     });
+    updateFavicon(s); 
+
     build();
-}
+  }
 
   document.querySelectorAll('.ssb').forEach(function (b) {
     b.addEventListener('click', function () { setSeason(b.dataset.s); });
@@ -747,5 +763,4 @@
 })();
 </script>
 </body>
-
 </html>
