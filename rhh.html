@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IoGrabber</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;700;900&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  :root {
+    --bg:      #080e1c;
+    --surface: rgba(11,22,50,0.65);
+    --accent:  #4db8e8;
+    --accent2: #7dcef5;
+    --accent3: #b8e4fa;
+    --text:    #ddeef8;
+    --muted:   #6a9ab5;
+    --border:  rgba(77,184,232,0.18);
+    --glow:    rgba(77,184,232,0.12);
+    --glowhrd: rgba(77,184,232,0.28);
+    --grad:    linear-gradient(135deg,#4db8e8,#b8e4fa);
+  }
+  [data-season="spring"] {
+    --bg:      #071409;
+    --surface: rgba(8,25,10,0.65);
+    --accent:  #4caf6e;
+    --accent2: #7dcf95;
+    --accent3: #b2dfb2;
+    --text:    #e0f2e0;
+    --muted:   #5d9e72;
+    --border:  rgba(76,175,110,0.18);
+    --glow:    rgba(76,175,110,0.12);
+    --glowhrd: rgba(76,175,110,0.28);
+    --grad:    linear-gradient(135deg,#4caf6e,#b2dfb2);
+  }
+  [data-season="summer"] {
+    --bg:      #130f00;
+    --surface: rgba(25,18,0,0.65);
+    --accent:  #f5c842;
+    --accent2: #fad96a;
+    --accent3: #fce9a8;
+    --text:    #fef8de;
+    --muted:   #c4992a;
+    --border:  rgba(245,200,66,0.18);
+    --glow:    rgba(245,200,66,0.12);
+    --glowhrd: rgba(245,200,66,0.28);
+    --grad:    linear-gradient(135deg,#f5c842,#fce9a8);
+  }
+  [data-season="autumn"] {
+    --bg:      #130700;
+    --surface: rgba(22,10,0,0.65);
+    --accent:  #e06428;
+    --accent2: #e88a50;
+    --accent3: #f4b882;
+    --text:    #faeae0;
+    --muted:   #b05a20;
+    --border:  rgba(224,100,40,0.18);
+    --glow:    rgba(224,100,40,0.12);
+    --glowhrd: rgba(224,100,40,0.28);
+    --grad:    linear-gradient(135deg,#e06428,#f4b882);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:'Manrope',sans-serif;
+    min-height:100vh;overflow-x:hidden;
+    transition:background 0.7s,color 0.5s;
+  }
+  body::after{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.03;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  #canvas{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:0.75}
+  .page{position:relative;z-index:2}
+
+  .ssw{
+    position:fixed;top:1.4rem;left:1.4rem;z-index:200;
+    display:flex;gap:0.35rem;
+    background:var(--surface);border:1px solid var(--border);
+    backdrop-filter:blur(16px);border-radius:100px;
+    padding:0.35rem 0.5rem;transition:border-color 0.4s;
+  }
+  .ssb{
+    width:32px;height:32px;border-radius:50%;
+    border:1px solid transparent;background:transparent;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    color:var(--muted);font-size:0.78rem;
+    transition:background 0.3s,color 0.3s,border-color 0.3s;
+  }
+  .ssb:hover{color:var(--text)}
+  .ssb.on{background:var(--glowhrd);border-color:var(--accent);color:var(--accent)}
+  .slbl{
+    position:fixed;top:1.4rem;right:1.4rem;z-index:200;
+    background:var(--surface);border:1px solid var(--border);
+    backdrop-filter:blur(16px);border-radius:100px;
+    padding:0.45rem 1.1rem;
+    font-family:'Unbounded',sans-serif;font-size:0.6rem;
+    letter-spacing:0.18em;color:var(--accent);
+    transition:color 0.4s,border-color 0.4s;
+  }
+
+  .hero{
+    min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:6rem 2rem 4rem;position:relative;
+  }
+  .eyebrow-pill{
+    display:inline-flex;align-items:center;gap:0.6rem;
+    border:1px solid var(--border);background:var(--glow);
+    backdrop-filter:blur(12px);border-radius:100px;
+    padding:0.45rem 1.3rem;font-size:0.62rem;
+    font-family:'Unbounded',sans-serif;color:var(--accent);
+    letter-spacing:0.15em;text-transform:uppercase;
+    margin-bottom:2.5rem;animation:fadeDown 0.7s ease both;
+    transition:color 0.4s,border-color 0.4s;
+  }
+  .logo-wrap{animation:fadeUp 0.8s ease 0.1s both}
+  .logo-main{
+    font-family:'Unbounded',sans-serif;
+    font-size:clamp(3.5rem,11vw,9rem);
+    font-weight:900;line-height:0.9;letter-spacing:-0.04em;
+  }
+  .logo-io{
+    background:var(--grad);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;transition:background 0.6s;
+  }
+  .logo-sub{
+    font-family:'Unbounded',sans-serif;
+    font-size:clamp(0.55rem,1.2vw,0.75rem);
+    font-weight:300;letter-spacing:0.22em;text-transform:uppercase;
+    color:var(--muted);display:block;margin-top:1rem;transition:color 0.4s;
+  }
+  .hero-p{
+    font-size:clamp(0.9rem,1.8vw,1.1rem);color:var(--muted);
+    max-width:480px;line-height:1.85;margin:2rem 0 2.8rem;
+    font-weight:300;animation:fadeUp 0.8s ease 0.2s both;transition:color 0.4s;
+  }
+  .btns{
+    display:flex;gap:0.9rem;flex-wrap:wrap;justify-content:center;
+    animation:fadeUp 0.8s ease 0.3s both;
+  }
+  .btn{
+    display:inline-flex;align-items:center;gap:0.55rem;
+    padding:0.88rem 2rem;border-radius:100px;
+    font-family:'Unbounded',sans-serif;font-size:0.68rem;
+    font-weight:700;letter-spacing:0.08em;
+    text-decoration:none;text-transform:uppercase;
+    border:none;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;
+  }
+  .btn:hover{transform:translateY(-3px)}
+  .btn-p{
+    background:var(--grad);color:#000;
+    box-shadow:0 0 40px var(--glowhrd);
+    transition:transform 0.2s,box-shadow 0.2s,background 0.6s;
+  }
+  .btn-o{
+    background:var(--surface);color:var(--accent);
+    border:1px solid var(--border);backdrop-filter:blur(12px);
+    transition:transform 0.2s,color 0.4s,border-color 0.4s;
+  }
+  .scroll-cue{
+    position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;gap:0.5rem;
+    color:var(--muted);font-size:0.58rem;font-family:'Unbounded',sans-serif;
+    letter-spacing:0.2em;text-transform:uppercase;
+    animation:fadeUp 0.8s ease 0.6s both;transition:color 0.4s;
+  }
+  .scroll-cue i{animation:bob 2s ease infinite}
+
+  .wrap{max-width:1120px;margin:0 auto;padding:0 2rem}
+  .sec{padding:7rem 0}
+  .hr{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);transition:background 0.4s}
+
+  .lbl{
+    font-family:'Unbounded',sans-serif;font-size:0.58rem;
+    letter-spacing:0.2em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:0.9rem;transition:color 0.4s;
+  }
+  .h2{
+    font-family:'Unbounded',sans-serif;
+    font-size:clamp(1.8rem,4vw,3rem);
+    font-weight:700;line-height:1.1;margin-bottom:1.2rem;
+  }
+  .desc{
+    color:var(--muted);line-height:1.85;max-width:560px;
+    font-size:0.93rem;font-weight:300;transition:color 0.4s;
+  }
+
+  .stats{
+    display:grid;grid-template-columns:repeat(4,1fr);
+    border:1px solid var(--border);border-radius:1.4rem;
+    overflow:hidden;margin-top:1rem;transition:border-color 0.4s;
+  }
+  @media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .st{
+    padding:2.2rem 1.5rem;text-align:center;
+    background:var(--surface);backdrop-filter:blur(16px);
+    border-right:1px solid var(--border);
+    transition:background 0.4s,border-color 0.4s;
+  }
+  .st:last-child{border-right:none}
+  .st-n{
+    font-family:'Unbounded',sans-serif;font-size:2.3rem;font-weight:900;
+    background:var(--grad);-webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;background-clip:text;
+    line-height:1;margin-bottom:0.4rem;transition:background 0.6s;
+  }
+  .st-l{
+    font-size:0.62rem;font-family:'Unbounded',sans-serif;
+    letter-spacing:0.12em;text-transform:uppercase;
+    color:var(--muted);transition:color 0.4s;
+  }
+
+  .grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));
+    gap:1.3rem;margin-top:3rem;
+  }
+  .card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:1.4rem;padding:2rem;backdrop-filter:blur(20px);
+    transition:transform 0.3s,box-shadow 0.3s,border-color 0.4s,background 0.4s;
+    position:relative;overflow:hidden;
+  }
+  .card::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg,var(--glow) 0%,transparent 60%);
+    opacity:0;transition:opacity 0.3s;pointer-events:none;
+  }
+  .card:hover{transform:translateY(-5px);box-shadow:0 16px 50px var(--glowhrd);border-color:var(--accent)}
+  .card:hover::before{opacity:1}
+  .c-ico{
+    width:44px;height:44px;border-radius:12px;
+    background:var(--glow);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:1.2rem;font-size:1rem;color:var(--accent);
+    transition:color 0.4s,border-color 0.4s,background 0.4s;
+  }
+  .c-type{
+    font-family:'Unbounded',sans-serif;font-size:0.95rem;
+    font-weight:700;color:var(--accent);margin-bottom:0.6rem;transition:color 0.4s;
+  }
+  .c-desc{
+    color:var(--muted);font-size:0.86rem;line-height:1.75;
+    margin-bottom:1.2rem;font-weight:300;transition:color 0.4s;
+  }
+  .tags{display:flex;flex-wrap:wrap;gap:0.4rem}
+  .tag{
+    font-size:0.6rem;font-family:'Unbounded',sans-serif;
+    padding:0.26rem 0.75rem;border-radius:100px;
+    border:1px solid var(--border);color:var(--accent3);
+    background:var(--glow);letter-spacing:0.05em;
+    transition:color 0.4s,border-color 0.4s,background 0.4s;
+  }
+
+  .steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:2.5rem;margin-top:3.5rem}
+  .step-ico{
+    width:34px;height:34px;border-radius:50%;
+    border:1px solid var(--border);color:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    font-size:0.82rem;margin-bottom:0.9rem;
+    transition:color 0.4s,border-color 0.4s;
+  }
+  .step-n{
+    font-family:'Unbounded',sans-serif;font-size:3.2rem;
+    font-weight:900;color:var(--border);line-height:1;
+    margin-bottom:0.9rem;transition:color 0.5s;
+  }
+  .step:hover .step-n{color:var(--accent);opacity:0.5}
+  .step-t{font-family:'Unbounded',sans-serif;font-size:0.88rem;font-weight:700;margin-bottom:0.55rem}
+  .step-d{color:var(--muted);font-size:0.86rem;line-height:1.75;font-weight:300;transition:color 0.4s}
+
+  .cta{
+    margin:0 2rem 2rem;border-radius:2rem;
+    background:var(--surface);border:1px solid var(--border);
+    backdrop-filter:blur(24px);padding:6rem 3rem;
+    text-align:center;position:relative;overflow:hidden;
+    transition:border-color 0.4s,background 0.4s;
+  }
+  .cta-glow{
+    position:absolute;top:50%;left:50%;
+    width:500px;height:500px;border-radius:50%;
+    background:radial-gradient(circle,var(--glowhrd),transparent 70%);
+    transform:translate(-50%,-50%);pointer-events:none;transition:background 0.6s;
+  }
+  .cta-ico{
+    width:62px;height:62px;border-radius:50%;
+    background:var(--glow);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.5rem;color:var(--accent);
+    margin:0 auto 1.8rem;animation:flt 4s ease-in-out infinite;
+    position:relative;z-index:1;transition:color 0.4s,border-color 0.4s;
+  }
+  .cta-t{
+    font-family:'Unbounded',sans-serif;
+    font-size:clamp(1.6rem,4vw,2.8rem);
+    font-weight:900;margin-bottom:1rem;position:relative;z-index:1;
+  }
+  .cta-d{
+    color:var(--muted);max-width:440px;margin:0 auto 2.5rem;
+    line-height:1.8;font-weight:300;font-size:0.93rem;
+    position:relative;z-index:1;transition:color 0.4s;
+  }
+
+  footer{
+    padding:2.5rem 2rem;border-top:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;
+    flex-wrap:wrap;gap:1rem;transition:border-color 0.4s;
+  }
+  .f-logo{
+    font-family:'Unbounded',sans-serif;font-size:1rem;font-weight:900;
+    letter-spacing:-0.03em;background:var(--grad);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;transition:background 0.6s;
+  }
+  .f-copy{font-size:0.7rem;color:var(--muted);font-family:'Unbounded',sans-serif;letter-spacing:0.05em;transition:color 0.4s}
+  .f-links{display:flex;gap:1.2rem}
+  .f-links a{color:var(--muted);font-size:1rem;text-decoration:none;transition:color 0.2s}
+  .f-links a:hover{color:var(--accent)}
+
+  .rv{opacity:0;transform:translateY(34px);transition:opacity 0.75s ease,transform 0.75s ease}
+  .rv.in{opacity:1;transform:none}
+  .d1{transition-delay:.1s}.d2{transition-delay:.2s}.d3{transition-delay:.3s}.d4{transition-delay:.4s}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+  @keyframes fadeDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+  @keyframes flt{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+  @media(max-width:600px){
+    .cta{margin:0 1rem 1rem;padding:4rem 1.5rem}
+    .btns{flex-direction:column;align-items:center}
+    footer{flex-direction:column;text-align:center}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div class="ssw">
+  <button class="ssb" data-s="winter" title="Зима"><i class="fa-solid fa-snowflake"></i></button>
+  <button class="ssb" data-s="spring" title="Весна"><i class="fa-solid fa-cloud-rain"></i></button>
+  <button class="ssb" data-s="summer" title="Лето"><i class="fa-solid fa-sun"></i></button>
+  <button class="ssb" data-s="autumn" title="Осень"><i class="fa-solid fa-leaf"></i></button>
+</div>
+<div class="slbl" id="slbl">ЗИМА</div>
+
+<div class="page">
+
+  <section class="hero">
+    <div class="eyebrow-pill">
+      <i class="fa-solid fa-circle-nodes"></i>
+      Бесплатные прокси - без регистрации
+    </div>
+    <div class="logo-wrap">
+      <div class="logo-main"><span class="logo-io">Io</span>Grabber</div>
+      <span class="logo-sub">Proxy Distribution Network</span>
+    </div>
+    <p class="hero-p">Раздаём свежие HTTP, SOCKS4 и SOCKS5 прокси каждый день. Бесплатно, без ограничений - подписывайся и забирай.</p>
+    <div class="btns">
+      <a href="https://t.me/iograbber" class="btn btn-p">
+        <i class="fa-brands fa-telegram"></i> Telegram-канал
+      </a>
+      <a href="#proxies" class="btn btn-o">
+        <i class="fa-solid fa-arrow-down"></i> Подробнее
+      </a>
+    </div>
+    <div class="scroll-cue">Скролл &nbsp;<i class="fa-solid fa-chevron-down"></i></div>
+  </section>
+
+  <div class="wrap" style="padding-bottom:2rem">
+    <div class="stats rv">
+      <div class="st"><div class="st-n">~200</div><div class="st-l">Прокси в день</div></div>
+      <div class="st"><div class="st-n">3</div><div class="st-l">Типа прокси</div></div>
+      <div class="st"><div class="st-n">100%</div><div class="st-l">Бесплатно</div></div>
+      <div class="st"><div class="st-n">24/7</div><div class="st-l">Обновление</div></div>
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <section class="sec wrap" id="proxies">
+    <p class="lbl rv">Что раздаём</p>
+    <h2 class="h2 rv d1">SOCKS5 SOCKS4 HTTP<br>в одном канале</h2>
+    <p class="desc rv d2">Публикуем листы несколько раз в сутки. Выбирай тип под задачу - от простого парсинга до максимальной анонимности.</p>
+    <div class="grid">
+      <div class="card rv">
+        <div class="c-ico"><i class="fa-solid fa-globe"></i></div>
+        <div class="c-type">HTTP</div>
+        <p class="c-desc">Классический протокол для веб-запросов, парсинга и браузерного трафика. Поддерживается везде - от curl до любых фреймворков.</p>
+        <div class="tags"><span class="tag">Веб</span><span class="tag">Парсинг</span><span class="tag">Браузер</span></div>
+      </div>
+      <div class="card rv d1">
+        <div class="c-ico"><i class="fa-solid fa-bolt"></i></div>
+        <div class="c-type">SOCKS4</div>
+        <p class="c-desc">Низкоуровневый TCP-протокол с высокой скоростью. Подходит для игр, P2P-сетей и нестандартных соединений.</p>
+        <div class="tags"><span class="tag">TCP</span><span class="tag">Игры</span><span class="tag">P2P</span></div>
+      </div>
+      <div class="card rv d2">
+        <div class="c-ico"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="c-type">SOCKS5</div>
+        <p class="c-desc">Самый гибкий протокол: UDP, IPv6, авторизация. Работает с мессенджерами, торрентами и даёт максимальную анонимность.</p>
+        <div class="tags"><span class="tag">UDP</span><span class="tag">IPv6</span><span class="tag">Анонимность</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="hr"></div>
+
+  <section class="sec wrap">
+    <p class="lbl rv">Как получить</p>
+    <h2 class="h2 rv d1">Просто подпишись<br>и забирай листы</h2>
+    <div class="steps">
+      <div class="step rv">
+        <div class="step-ico"><i class="fa-brands fa-telegram"></i></div>
+        <div class="step-n">01</div>
+        <div class="step-t">Подпишись на канал</div>
+        <p class="step-d">Переходи по кнопке ниже в Telegram. Подписка бесплатная - никаких данных не нужно.</p>
+      </div>
+      <div class="step rv d1">
+        <div class="step-ico"><i class="fa-solid fa-list-check"></i></div>
+        <div class="step-n">02</div>
+        <div class="step-t">Выбери тип прокси</div>
+        <p class="step-d">В канале публикуем листы прокси. Выбирай нужный протокол под задачу.</p>
+      </div>
+      <div class="step rv d2">
+        <div class="step-ico"><i class="fa-solid fa-copy"></i></div>
+        <div class="step-n">03</div>
+        <div class="step-t">Скопируй и вставь</div>
+        <p class="step-d">Скопируй список и вставь в приложение, браузер или скрипт - сразу готово к работе.</p>
+      </div>
+      <div class="step rv d3">
+        <div class="step-ico"><i class="fa-solid fa-rotate"></i></div>
+        <div class="step-n">04</div>
+        <div class="step-t">Получай обновления</div>
+        <p class="step-d">Листы обновляются несколько раз в сутки. Актуальные прокси - всегда в ленте.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="cta rv">
+    <div class="cta-glow"></div>
+    <div class="cta-ico"><i class="fa-brands fa-telegram"></i></div>
+    <h2 class="cta-t">Присоединяйся<br>к IoGrabber</h2>
+    <p class="cta-d">Сотни пользователей уже получают свежие листы каждый день. Бесплатно, без регистрации и спама.</p>
+    <a href="https://t.me/iograbber" class="btn btn-p" style="position:relative;z-index:1;font-size:0.76rem;padding:1rem 2.5rem;">
+      <i class="fa-brands fa-telegram"></i> Открыть канал
+    </a>
+  </div>
+
+  <footer>
+    <div class="f-logo">IoGrabber</div>
+    <div class="f-copy">2025 &middot; Все прокси раздаются бесплатно &middot; 24/7</div>
+    <div class="f-links">
+      <a href="https://t.me/iograbber" title="Telegram"><i class="fa-brands fa-telegram"></i></a>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+
+  var cv  = document.getElementById('canvas');
+  var ctx = cv.getContext('2d');
+  var W   = 0;
+  var H   = 0;
+  var pts = [];
+  var mode = 'winter';
+
+  var labels = { winter:'ЗИМА', spring:'ВЕСНА', summer:'ЛЕТО', autumn:'ОСЕНЬ' };
+
+  function resize() {
+    W = cv.width  = window.innerWidth;
+    H = cv.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', function () { resize(); build(); });
+
+  function rnd(a, b) { return Math.random() * (b - a) + a; }
+  function ri(a, b)  { return Math.floor(rnd(a, b + 1)); }
+
+  function makeSnowflake() {
+    var p = {};
+    function init(spread) {
+      p.x   = rnd(0, W);
+      p.y   = spread ? rnd(0, H) : -20;
+      p.r   = rnd(1.5, 4.5);
+      p.vy  = rnd(0.4, 1.4);
+      p.vx  = rnd(-0.5, 0.5);
+      p.op  = rnd(0.25, 0.75);
+      p.rot = rnd(0, Math.PI * 2);
+      p.dr  = rnd(-0.02, 0.02);
+      p.wb  = rnd(0, Math.PI * 2);
+      p.ws  = rnd(0.008, 0.025);
+    }
+    init(true);
+    p.tick = function () {
+      p.wb += p.ws;
+      p.x  += p.vx + Math.sin(p.wb) * 0.5;
+      p.y  += p.vy;
+      p.rot += p.dr;
+      if (p.y > H + 20) init(false);
+    };
+    p.draw = function () {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = p.op;
+      ctx.strokeStyle = 'rgba(200,235,255,0.9)';
+      ctx.lineWidth   = 0.9;
+      for (var i = 0; i < 6; i++) {
+        var arm = p.r * 3;
+        var bl  = p.r * 1.2;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, arm); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, bl); ctx.lineTo(-bl * 0.45, bl - bl * 0.45); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, bl); ctx.lineTo( bl * 0.45, bl - bl * 0.45); ctx.stroke();
+        ctx.rotate(Math.PI / 3);
+      }
+      ctx.beginPath();
+      ctx.arc(0, 0, p.r * 0.38, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(220,245,255,0.95)';
+      ctx.fill();
+      ctx.restore();
+    };
+    return p;
+  }
+
+  function makeRaindrop() {
+    var p = {};
+    function init(spread) {
+      p.x   = rnd(0, W);
+      p.y   = spread ? rnd(0, H) : rnd(-40, -5);
+      p.len = rnd(10, 22);
+      p.vy  = rnd(12, 20);
+      p.op  = rnd(0.15, 0.45);
+    }
+    init(true);
+    p.tick = function () {
+      p.x += p.vy * 0.12;
+      p.y += p.vy;
+      if (p.y > H + 20 || p.x > W + 20) init(false);
+    };
+    p.draw = function () {
+      ctx.save();
+      ctx.globalAlpha = p.op;
+      ctx.strokeStyle = 'rgba(140,210,255,0.85)';
+      ctx.lineWidth   = 1;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x + p.len * 0.12, p.y + p.len);
+      ctx.stroke();
+      ctx.restore();
+    };
+    return p;
+  }
+
+  function makeSunray() {
+    var p = {};
+    var OX = 0, OY = 0;
+    function init() {
+      OX      = rnd(W * 0.2, W * 0.8);
+      OY      = rnd(-W * 0.6, -W * 0.15);
+      p.a1    = rnd(-0.55, 0.55);
+      p.a2    = p.a1 + rnd(0.04, 0.18);
+      p.reach = rnd(W * 0.9, W * 2.2);
+      p.op    = 0;
+      p.maxOp = rnd(0.06, 0.18);
+      p.spd   = rnd(0.001, 0.0025);
+      p.phase = 'in';
+      p.hold  = 0;
+    }
+    init();
+    p.tick = function () {
+      if (p.phase === 'in') {
+        p.op += p.spd;
+        if (p.op >= p.maxOp) { p.op = p.maxOp; p.phase = 'hold'; p.hold = 0; }
+      } else if (p.phase === 'hold') {
+        p.hold++;
+        if (p.hold > ri(90, 220)) p.phase = 'out';
+      } else {
+        p.op -= p.spd;
+        if (p.op <= 0) { p.op = 0; init(); }
+      }
+    };
+    p.draw = function () {
+      if (p.op <= 0) return;
+      var x1 = OX + Math.sin(p.a1) * p.reach;
+      var y1 = OY + Math.cos(p.a1) * p.reach;
+      var x2 = OX + Math.sin(p.a2) * p.reach;
+      var y2 = OY + Math.cos(p.a2) * p.reach;
+      var gx = (x1 + x2) / 2;
+      var gy = (y1 + y2) / 2;
+      var g  = ctx.createRadialGradient(OX, OY, 0, gx, gy, p.reach);
+      g.addColorStop(0,    'rgba(255,240,120,' + (p.op * 0.9) + ')');
+      g.addColorStop(0.35, 'rgba(255,215,60,'  + (p.op * 0.7) + ')');
+      g.addColorStop(0.75, 'rgba(255,200,40,'  + (p.op * 0.3) + ')');
+      g.addColorStop(1,    'rgba(255,200,40,0)');
+      ctx.save();
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(OX, OY);
+      ctx.lineTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    };
+    return p;
+  }
+
+  var LEAF_COLORS = [
+    [220, 88,  36],
+    [200, 110, 30],
+    [230, 140, 40],
+    [180, 60,  20],
+    [210, 100, 50]
+  ];
+
+  function makeLeaf() {
+    var p = {};
+    function init(spread) {
+      p.x   = rnd(0, W);
+      p.y   = spread ? rnd(0, H) : -20;
+      p.r   = rnd(5, 12);
+      p.vy  = rnd(0.7, 2.0);
+      p.vx  = rnd(-1.0, 1.0);
+      p.op  = rnd(0.35, 0.8);
+      p.rot = rnd(0, Math.PI * 2);
+      p.dr  = rnd(-0.055, 0.055);
+      p.wb  = rnd(0, Math.PI * 2);
+      p.ws  = rnd(0.012, 0.03);
+      p.col = LEAF_COLORS[ri(0, LEAF_COLORS.length - 1)];
+    }
+    init(true);
+    p.tick = function () {
+      p.wb  += p.ws;
+      p.x   += p.vx + Math.sin(p.wb) * 0.9;
+      p.y   += p.vy;
+      p.rot += p.dr;
+      if (p.y > H + 30) init(false);
+    };
+    p.draw = function () {
+      var c = p.col;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = p.op;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.r * 0.55, p.r * 1.4, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(0, -p.r * 1.4); ctx.lineTo(0, p.r * 1.4); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, -p.r * 0.3); ctx.lineTo( p.r * 0.42, -p.r * 0.8);
+      ctx.moveTo(0, -p.r * 0.3); ctx.lineTo(-p.r * 0.42, -p.r * 0.8);
+      ctx.moveTo(0,  p.r * 0.2); ctx.lineTo( p.r * 0.38, -p.r * 0.2);
+      ctx.moveTo(0,  p.r * 0.2); ctx.lineTo(-p.r * 0.38, -p.r * 0.2);
+      ctx.stroke();
+      ctx.restore();
+    };
+    return p;
+  }
+
+  function build() {
+    pts = [];
+    if (mode === 'winter') {
+      for (var i = 0; i < 65; i++)  pts.push(makeSnowflake());
+    } else if (mode === 'spring') {
+      for (var i = 0; i < 130; i++) pts.push(makeRaindrop());
+    } else if (mode === 'summer') {
+      for (var i = 0; i < 18; i++)  pts.push(makeSunray());
+    } else if (mode === 'autumn') {
+      for (var i = 0; i < 55; i++)  pts.push(makeLeaf());
+    }
+  }
+
+  function getAutoSeason() {
+    const month = new Date().getMonth(); 
+    if ([11, 0, 1].includes(month)) return 'winter'; 
+    if ([2, 3, 4].includes(month))   return 'spring'; 
+    if ([5, 6, 7].includes(month))   return 'summer';
+    return 'autumn';                                  
+  }
+
+  function setSeason(s, isManual = false) {
+    mode = s;
+  
+    if (isManual) localStorage.setItem('user-season', s);
+  
+    if (s === 'winter') {
+      document.body.removeAttribute('data-season');
+    } else {
+      document.body.setAttribute('data-season', s);
+    }
+  
+    document.getElementById('slbl').textContent = labels[s];
+    document.querySelectorAll('.ssb').forEach(function (b) {
+      b.classList.toggle('on', b.dataset.s === s);
+    });
+    build();
+}
+
+  document.querySelectorAll('.ssb').forEach(function (b) {
+    b.addEventListener('click', function () { setSeason(b.dataset.s); });
+  });
+
+  var mo   = new Date().getMonth();
+  var auto = (mo >= 11 || mo <= 1) ? 'winter' : (mo <= 4) ? 'spring' : (mo <= 7) ? 'summer' : 'autumn';
+  const savedSeason = localStorage.getItem('user-season');
+  setSeason(savedSeason || getAutoSeason());
+
+  document.querySelectorAll('.ssb').forEach(function (b) {
+    b.addEventListener('click', function () { 
+      setSeason(b.dataset.s, true); 
+    });
+  });
+
+  (function loop() {
+    ctx.clearRect(0, 0, W, H);
+    for (var i = 0; i < pts.length; i++) {
+      pts[i].tick();
+      pts[i].draw();
+    }
+    requestAnimationFrame(loop);
+  })();
+
+  var rvs = document.querySelectorAll('.rv');
+  var ob  = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  rvs.forEach(function (el) { ob.observe(el); });
+
+  document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      var t = document.querySelector(a.getAttribute('href'));
+      if (t) t.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+})();
+</script>
+</body>
+</html>
